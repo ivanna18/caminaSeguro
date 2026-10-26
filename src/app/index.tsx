@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import * as Battery from 'expo-battery';
 import { colors, spacing, radius } from '@/constants/caminaTheme';
+import { obtenerContactos } from '@/utils/storage';
 
 function Chip({ texto }: { texto: string }) {
   return (
@@ -17,7 +18,14 @@ export default function Inicio() {
   const router = useRouter();
   const pulso = useRef(new Animated.Value(0)).current;
   const sos = useRef(new Animated.Value(0)).current;
+  const [numContactos, setNumContactos] = useState(0);
   const [bateria, setBateria] = useState<number | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      obtenerContactos().then((contactos) => setNumContactos(contactos.length));
+    }, [])
+  );
 
   useEffect(() => {
     Animated.loop(
@@ -39,7 +47,7 @@ export default function Inicio() {
       ({ finished }) => {
         if (finished) {
           sos.setValue(0);
-          router.push('/alarma');
+          router.push({ pathname: '/alarma', params: { motivo: 'panico' } });  // ← antes decía router.push('/alarma');
         }
       }
     );
@@ -62,7 +70,7 @@ export default function Inicio() {
         <View style={styles.chips}>
           <Chip texto={bateria !== null ? `Batería ${bateria}%` : 'Batería --'} />
           <Chip texto="GPS: --" />
-          <Chip texto="Contactos 0/3" />
+          <Chip texto={`Contactos ${numContactos}/3`} />
         </View>
       </View>
 
