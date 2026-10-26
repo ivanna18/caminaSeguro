@@ -1,98 +1,136 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import * as Battery from 'expo-battery';
+import { colors, spacing, radius } from '@/constants/caminaTheme';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
-
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+function Chip({ texto }: { texto: string }) {
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
+    <View style={styles.chip}>
+      <Text style={styles.chipTexto}>{texto}</Text>
+    </View>
   );
 }
 
-export default function HomeScreen() {
+export default function Inicio() {
+  const router = useRouter();
+  const pulso = useRef(new Animated.Value(0)).current;
+  const sos = useRef(new Animated.Value(0)).current;
+  const [bateria, setBateria] = useState<number | null>(null);
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(pulso, {
+        toValue: 1,
+        duration: 1600,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      })
+    ).start();
+
+    Battery.getBatteryLevelAsync()
+      .then((n) => setBateria(n >= 0 ? Math.round(n * 100) : null))
+      .catch(() => {});
+  }, [pulso]);
+
+  const iniciarSOS = () => {
+    Animated.timing(sos, { toValue: 1, duration: 3000, useNativeDriver: false }).start(
+      ({ finished }) => {
+        if (finished) {
+          sos.setValue(0);
+          router.push('/alarma');
+        }
+      }
+    );
+  };
+
+  const soltarSOS = () => {
+    sos.stopAnimation();
+    sos.setValue(0);
+  };
+
+  const anchoSOS = sos.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
+  const escalaAnillo = pulso.interpolate({ inputRange: [0, 1], outputRange: [1, 1.4] });
+  const opacidadAnillo = pulso.interpolate({ inputRange: [0, 1], outputRange: [0.5, 0] });
+
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
+    <SafeAreaView style={styles.pantalla}>
+      <View style={styles.encabezado}>
+        <Text style={styles.titulo}>caminaSeguro</Text>
+        <Text style={styles.subtitulo}>Tu trayecto, acompañado.</Text>
+        <View style={styles.chips}>
+          <Chip texto={bateria !== null ? `Batería ${bateria}%` : 'Batería --'} />
+          <Chip texto="GPS: --" />
+          <Chip texto="Contactos 0/3" />
+        </View>
+      </View>
 
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
+      <View style={styles.centro}>
+        <Animated.View
+          style={[styles.anillo, { opacity: opacidadAnillo, transform: [{ scale: escalaAnillo }] }]}
+        />
+        <Pressable style={styles.botonPrincipal} onPress={() => router.push('/trayecto')}>
+          <Text style={styles.botonTexto}>Iniciar{'\n'}trayecto</Text>
+        </Pressable>
+      </View>
 
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+      <View style={styles.pie}>
+        <Pressable onPressIn={iniciarSOS} onPressOut={soltarSOS} style={styles.sos}>
+          <Animated.View style={[styles.sosRelleno, { width: anchoSOS }]} />
+          <Text style={styles.sosTexto}>SOS · mantén 3 s</Text>
+        </Pressable>
+        <Pressable onPress={() => router.push('/ajustes')}>
+          <Text style={styles.enlace}>Ajustes y contactos</Text>
+        </Pressable>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  pantalla: { flex: 1, backgroundColor: colors.fondo, padding: spacing.l },
+  encabezado: { gap: spacing.s },
+  titulo: { color: colors.texto, fontSize: 28, fontWeight: '700' },
+  subtitulo: { color: colors.textoSuave, fontSize: 16 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.s, marginTop: spacing.m },
+  chip: {
+    backgroundColor: colors.tarjeta,
+    paddingVertical: 6,
+    paddingHorizontal: spacing.m,
+    borderRadius: radius.l,
+  },
+  chipTexto: { color: colors.textoSuave, fontSize: 13 },
+  centro: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  anillo: {
+    position: 'absolute',
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: colors.verde,
+  },
+  botonPrincipal: {
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: colors.verde,
     justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
     alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
   },
-  heroSection: {
-    alignItems: 'center',
+  botonTexto: { color: colors.fondo, fontSize: 24, fontWeight: '800', textAlign: 'center' },
+  pie: { gap: spacing.m, alignItems: 'center' },
+  sos: {
+    width: '100%',
+    height: 64,
+    borderRadius: radius.m,
+    backgroundColor: colors.tarjeta,
+    borderWidth: 2,
+    borderColor: colors.rojo,
+    overflow: 'hidden',
     justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
+    alignItems: 'center',
   },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
-  },
+  sosRelleno: { position: 'absolute', left: 0, top: 0, bottom: 0, backgroundColor: colors.rojo },
+  sosTexto: { color: colors.texto, fontSize: 18, fontWeight: '700' },
+  enlace: { color: colors.textoSuave, fontSize: 15 },
 });
