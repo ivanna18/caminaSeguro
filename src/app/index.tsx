@@ -47,7 +47,7 @@ export default function Inicio() {
       ({ finished }) => {
         if (finished) {
           sos.setValue(0);
-          router.push({ pathname: '/alarma', params: { motivo: 'panico' } });  // ← antes decía router.push('/alarma');
+          router.push({ pathname: '/alarma', params: { motivo: 'panico' } });  
         }
       }
     );

@@ -14,7 +14,7 @@ const QUIETO_MS = 2000;       // inmovilidad requerida tras el impacto
 const VENTANA_MAX_MS = 6000;  // si no se queda quieto en este tiempo, se descarta
 const TOLERANCIA = 0.15;      // |A - 1g| menor a esto = sin movimiento
 
-// Fuerza total: A = √(x² + y² + z²)
+
 export function fuerzaTotal(x: number, y: number, z: number) {
   return Math.sqrt(x * x + y * y + z * z);
 }

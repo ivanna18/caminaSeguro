@@ -7,7 +7,7 @@ import { colors, spacing, radius } from '@/constants/caminaTheme';
 import { useDeteccionCaidas } from '@/hooks/useDeteccionCaidas';
 
 export default function Trayecto() {
-  useKeepAwake(); // la pantalla no se bloquea mientras dure el trayecto
+  useKeepAwake(); 
 
   const router = useRouter();
   const [activo, setActivo] = useState(true);
