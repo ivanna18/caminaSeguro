@@ -65,7 +65,7 @@ export default function Inicio() {
   return (
     <SafeAreaView style={styles.pantalla}>
       <View style={styles.encabezado}>
-        <Text style={styles.titulo}>caminaSeguro</Text>
+        <Text style={styles.titulo}>CaminaSeguro</Text>
         <Text style={styles.subtitulo}>Tu trayecto, acompañado.</Text>
         <View style={styles.chips}>
           <Chip texto={bateria !== null ? `Batería ${bateria}%` : 'Batería --'} />
@@ -99,8 +99,8 @@ export default function Inicio() {
 const styles = StyleSheet.create({
   pantalla: { flex: 1, backgroundColor: colors.fondo, padding: spacing.l },
   encabezado: { gap: spacing.s },
-  titulo: { color: colors.texto, fontSize: 28, fontWeight: '700' },
-  subtitulo: { color: colors.textoSuave, fontSize: 16 },
+  titulo: { color: colors.texto, fontSize: 35, fontWeight: '600' },
+  subtitulo: { color: colors.textoSuave, fontSize: 16, fontWeight: '200' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.s, marginTop: spacing.m },
   chip: {
     backgroundColor: colors.tarjeta,
