@@ -5,6 +5,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import * as Battery from 'expo-battery';
 import { colors, spacing, radius } from '@/constants/caminaTheme';
 import { obtenerContactos } from '@/utils/storage';
+import * as Location from 'expo-location';
 
 function Chip({ texto }: { texto: string }) {
   return (
@@ -19,6 +20,7 @@ export default function Inicio() {
   const pulso = useRef(new Animated.Value(0)).current;
   const sos = useRef(new Animated.Value(0)).current;
   const [numContactos, setNumContactos] = useState(0);
+  const [gps, setGps] = useState('GPS: --');
   const [bateria, setBateria] = useState<number | null>(null);
 
   useFocusEffect(
@@ -26,6 +28,45 @@ export default function Inicio() {
       obtenerContactos().then((contactos) => setNumContactos(contactos.length));
     }, [])
   );
+
+  useFocusEffect(
+  useCallback(() => {
+    let cancelado = false;
+
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          if (!cancelado) setGps('GPS: sin permiso');
+          return;
+        }
+        if (!cancelado) setGps('GPS: buscando...');
+
+        const limite = new Promise<null>((res) => setTimeout(() => res(null), 8000));
+        const pos = await Promise.race([
+          Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+          limite,
+        ]);
+        if (cancelado) return;
+
+        if (!pos) {
+          setGps('GPS: sin señal');
+          return;
+        }
+        const p = pos.coords.accuracy;
+        setGps(
+          p == null ? 'GPS: activo' : p <= 15 ? 'GPS: buena' : p <= 40 ? 'GPS: media' : 'GPS: baja'
+        );
+      } catch {
+        if (!cancelado) setGps('GPS: no disponible');
+      }
+    })();
+
+    return () => {
+      cancelado = true;
+    };
+  }, [])
+);
 
   useEffect(() => {
     Animated.loop(
@@ -69,7 +110,7 @@ export default function Inicio() {
         <Text style={styles.subtitulo}>Tu trayecto, acompañado.</Text>
         <View style={styles.chips}>
           <Chip texto={bateria !== null ? `Batería ${bateria}%` : 'Batería --'} />
-          <Chip texto="GPS: --" />
+          <Chip texto={gps} />
           <Chip texto={`Contactos ${numContactos}/3`} />
         </View>
       </View>
