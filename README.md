@@ -1,56 +1,76 @@
-# Welcome to your Expo app 👋
+# caminaSeguro
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+App móvil hecha con **React Native + Expo** que acompaña a una persona durante un trayecto a pie y avisa a sus contactos de emergencia si detecta una caída, si no responde a un check-in o si activa el botón de pánico. Funciona **sin internet ni servidores externos**: solo usa APIs nativas de Expo.
 
-## Get started
+> Proyecto final (PIA) — entrega de avances: 31 de octubre.
 
-1. Install dependencies
+## Funcionalidades implementadas
 
-   ```bash
-   npm install
-   ```
+- **Pantalla principal** con botón de inicio de trayecto, botón SOS (mantener 3 s) y chips de estado (batería, precisión del GPS, contactos configurados).
+- **Ajustes:** hasta 3 contactos de emergencia y PIN de 4 dígitos, guardados en el dispositivo.
+- **Detección de caídas** con el acelerómetro: impacto fuerte seguido de 2 s de inmovilidad. Incluye botón de prueba para simular una caída.
+- **Trayecto activo:** cronómetro, velocidad, distancia recorrida, coordenadas y fuerza G en tiempo real; la pantalla no se bloquea.
+- **Alarma:** cuenta regresiva de 15 s con vibración, teclado de PIN para cancelar (falsa alarma), sirena en bucle y SMS con enlace de Google Maps con la ubicación.
 
-2. Start the app
+## APIs nativas de Expo usadas
 
-   ```bash
-   npx expo start
-   ```
+| Paquete | Para qué se usa |
+|---|---|
+| `expo-sensors` (Accelerometer) | Detección de caídas |
+| `expo-location` | Coordenadas, velocidad, distancia y precisión del GPS |
+| `expo-haptics` | Vibración durante la cuenta regresiva |
+| `expo-audio` | Sirena de la alarma |
+| `expo-sms` | Mensaje de emergencia con la ubicación |
+| `expo-keep-awake` | Pantalla encendida durante el trayecto |
+| `expo-secure-store` + `expo-crypto` | PIN guardado como hash en el almacenamiento seguro |
+| `expo-battery` | Nivel de batería en la pantalla principal |
+| `@react-native-async-storage/async-storage` | Contactos de emergencia |
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **src/app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Cómo correrlo
 
 ```bash
-npm run reset-project
+npm install
+npx expo start --tunnel
 ```
 
-This command will move the starter code to the **example** directory and create a blank **src/app** directory where you can start developing.
+Escanea el QR con Expo Go. La detección de caídas, los hápticos, el SMS y el GPS solo se prueban en un celular físico (no en la web).
 
-### Other setup steps
+## Estructura
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+```
+src/
+  app/          pantallas (index, trayecto, alarma, ajustes)
+  hooks/        useDeteccionCaidas
+  utils/        storage (contactos y PIN)
+  constants/    caminaTheme (colores y espaciados)
+assets/sounds/  alarma.wav
+```
 
-## Learn more
+## Limitaciones conocidas
 
-To learn more about developing your project with Expo, look at the following resources:
+- El SMS no se envía solo: el sistema abre la app de mensajes y el usuario toca enviar.
+- El acelerómetro y los temporizadores funcionan con la app abierta y la pantalla encendida.
+- La app reproduce la sirena a volumen máximo del reproductor, pero no puede subir el volumen del teléfono.
+- Los umbrales de caída se calibraron probando; pueden dar falsas alarmas en ciertos movimientos.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Plan de trabajo siguiente
 
-## Join the community
+- Check-in con temporizador y confirmación por PIN, con notificaciones locales (`expo-notifications`).
+- Modo correr con umbrales distintos y velocidad del GPS como segunda señal.
+- Ajuste de sensibilidad del acelerómetro desde Ajustes.
+- Historial de trayectos.
 
-Join our community of developers creating universal apps.
+## Evidencia
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- Repositorio: 
+- Primer APK: 
+
+
+## Participación del equipo (sesión de clase)
+
+| Integrante | Actividades realizadas |
+|---|---|
+| Ivanna Rodriguez | pantalla principal, ajustes y alarma |
+| Victor Colin |  deteccion de caidas y trayecto |
+
+
