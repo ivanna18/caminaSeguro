@@ -66,7 +66,7 @@ assets/sounds/  alarma.wav
 - Primer APK: 
 
 
-## Participación del equipo (sesión de clase)
+## Participación del equipo 
 
 | Integrante | Actividades realizadas |
 |---|---|
