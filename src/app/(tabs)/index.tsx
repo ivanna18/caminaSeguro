@@ -14,7 +14,7 @@ export default function Inicio() {
   const sos = useRef(new Animated.Value(0)).current;
   const [gps, setGps] = useState('GPS: --');
   const [bateria, setBateria] = useState<number | null>(null);
-  const { contactos } = useDatos();
+  const { contactos, agregarTrayecto } = useDatos();
 
   // Precisión del GPS cada vez que la pantalla recupera el foco
   useFocusEffect(
@@ -77,6 +77,12 @@ export default function Inicio() {
       ({ finished }) => {
         if (finished) {
           sos.setValue(0);
+          agregarTrayecto({
+            inicio: new Date().toISOString(),
+            duracionSeg: 0,
+            distanciaM: 0,
+            resultado: 'panico',
+          });
           router.push({ pathname: '/alarma', params: { motivo: 'panico' } });
         }
       }

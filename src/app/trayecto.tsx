@@ -3,10 +3,25 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
+import * as Location from 'expo-location';
 import { colors, spacing, radius } from '@/constants/caminaTheme';
 import { useDeteccionCaidas } from '@/hooks/useDeteccionCaidas';
-import * as Location from 'expo-location'; 
+import { useCheckin } from '@/hooks/useCheckin';                   
+import CheckinPrompt from '@/components/CheckinPrompt';           
+import { useDatos } from '@/context/DatosContext';
+import { ResultadoTrayecto } from '@/types';
+import { formatoTiempo } from '@/utils/formato';
 
+// opciones del check-in y tiempo para responder
+const OPCIONES_CHECKIN = [
+  { etiqueta: '30 s (prueba)', seg: 30 },
+  { etiqueta: '5 min', seg: 300 },
+  { etiqueta: '10 min', seg: 600 },
+  { etiqueta: '15 min', seg: 900 },
+];
+const VENTANA_CHECKIN_SEG = 30;
+
+// Distancia en metros entre dos coordenadas (fórmula de Haversine)
 function distanciaMetros(lat1: number, lng1: number, lat2: number, lng2: number) {
   const R = 6371000;
   const rad = (g: number) => (g * Math.PI) / 180;
@@ -18,38 +33,56 @@ function distanciaMetros(lat1: number, lng1: number, lat2: number, lng2: number)
   return 2 * R * Math.asin(Math.sqrt(a));
 }
 
-function formatoTiempo(seg: number) {
-  const m = Math.floor(seg / 60).toString().padStart(2, '0');
-  const s = (seg % 60).toString().padStart(2, '0');
-  return `${m}:${s}`;
-}
-
-
 export default function Trayecto() {
-  useKeepAwake(); 
+  useKeepAwake(); // la pantalla no se bloquea mientras dure el trayecto
 
   const router = useRouter();
+  const { agregarTrayecto } = useDatos();
+
   const [activo, setActivo] = useState(true);
   const [g, setG] = useState(1);
   const ultimaActualizacion = useRef(0);
+  const yaGuardado = useRef(false);
 
+  // Estado del GPS
   const [permisoGps, setPermisoGps] = useState<'pidiendo' | 'ok' | 'denegado'>('pidiendo');
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [precision, setPrecision] = useState<number | null>(null);
-  const [velocidad, setVelocidad] = useState(0); 
-  const [distancia, setDistancia] = useState(0); 
+  const [velocidad, setVelocidad] = useState(0); // km/h
+  const [distancia, setDistancia] = useState(0); // metros
   const [segundos, setSegundos] = useState(0);
   const anterior = useRef<{ lat: number; lng: number } | null>(null);
 
-  const dispararAlarma = () => {
+  const [intervalo, setIntervalo] = useState(600); // NUEVO: check-in cada 10 min por defecto
+
+  // Guarda el trayecto en el historial (una sola vez)
+  const guardarTrayecto = (resultado: ResultadoTrayecto) => {
+    if (yaGuardado.current) return;
+    yaGuardado.current = true;
+    agregarTrayecto({
+      inicio: new Date(Date.now() - segundos * 1000).toISOString(),
+      duracionSeg: segundos,
+      distanciaM: Math.round(distancia),
+      resultado,
+    });
+  };
+
+  // CAMBIO: ahora recibe el motivo ('caida' o 'checkin')
+  const dispararAlarma = (motivo: 'caida' | 'checkin') => {
+    guardarTrayecto(motivo);
     setActivo(false);
-    router.push({ pathname: '/alarma', params: { motivo: 'caida' } });
+    router.replace({ pathname: '/alarma', params: { motivo } });
+  };
+
+  const llegueASalvo = () => {
+    guardarTrayecto('completado');
+    router.replace('/');
   };
 
   useDeteccionCaidas({
     activo,
     sensibilidad: 'media',
-    onCaida: dispararAlarma,
+    onCaida: () => dispararAlarma('caida'), // CAMBIO
     onLectura: (a) => {
       const ahora = Date.now();
       if (ahora - ultimaActualizacion.current > 200) {
@@ -59,16 +92,21 @@ export default function Trayecto() {
     },
   });
 
-  //cronometrp
+  // NUEVO: check-in con temporizador
+  const checkin = useCheckin({
+    activo,
+    intervaloSeg: intervalo,
+    ventanaSeg: VENTANA_CHECKIN_SEG,
+    onFallo: () => dispararAlarma('checkin'),
+  });
+
+  // Cronómetro del trayecto
   useEffect(() => {
     const t = setInterval(() => setSegundos((s) => s + 1), 1000);
     return () => clearInterval(t);
   }, []);
 
-
-
-
-   // seguimiento GPS
+  // Seguimiento GPS
   useEffect(() => {
     let suscripcion: Location.LocationSubscription | null = null;
     let cancelado = false;
@@ -159,20 +197,43 @@ export default function Trayecto() {
         <Text style={styles.coordenadas}>{textoGps}</Text>
       </View>
 
+      {/* NUEVO: tarjeta del check-in */}
+      <View style={styles.checkin}>
+        <Text style={styles.etiqueta}>Próximo check-in en {formatoTiempo(checkin.restante)}</Text>
+        <View style={styles.opciones}>
+          {OPCIONES_CHECKIN.map((o) => (
+            <Pressable
+              key={o.seg}
+              onPress={() => setIntervalo(o.seg)}
+              style={[styles.opcion, intervalo === o.seg && styles.opcionActiva]}
+            >
+              <Text style={[styles.opcionTexto, intervalo === o.seg && styles.opcionTextoActivo]}>
+                {o.etiqueta}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+
       <View style={styles.pie}>
-        <Pressable style={styles.secundario} onPress={dispararAlarma}>
+        <Pressable style={styles.secundario} onPress={() => dispararAlarma('caida')}>
           <Text style={styles.secundarioTexto}>Simular caída (prueba)</Text>
         </Pressable>
-        <Pressable style={styles.principal} onPress={() => router.replace('/')}>
+        <Pressable style={styles.principal} onPress={llegueASalvo}>
           <Text style={styles.principalTexto}>Llegué a salvo</Text>
         </Pressable>
       </View>
+
+      {/* NUEVO: pregunta "¿Estás bien?" encima de todo */}
+      {checkin.preguntando && (
+        <CheckinPrompt ventana={checkin.ventana} onCorrecto={checkin.confirmar} />
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  pantalla: { flex: 1, backgroundColor: colors.fondo, padding: spacing.l, gap: spacing.l },
+  pantalla: { flex: 1, backgroundColor: colors.fondo, padding: spacing.l, gap: spacing.m },
   encabezado: { alignItems: 'center', gap: spacing.s },
   titulo: { color: colors.textoSuave, fontSize: 16 },
   tiempo: { color: colors.verde, fontSize: 56, fontWeight: '800' },
@@ -189,6 +250,18 @@ const styles = StyleSheet.create({
   unidad: { color: colors.textoSuave, fontSize: 13 },
   gps: { backgroundColor: colors.tarjeta, borderRadius: radius.m, padding: spacing.m, gap: 4 },
   coordenadas: { color: colors.texto, fontSize: 16, fontWeight: '600' },
+  checkin: { backgroundColor: colors.tarjeta, borderRadius: radius.m, padding: spacing.m, gap: spacing.s },
+  opciones: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.s },
+  opcion: {
+    borderWidth: 1,
+    borderColor: colors.textoSuave,
+    borderRadius: radius.l,
+    paddingVertical: 6,
+    paddingHorizontal: spacing.m,
+  },
+  opcionActiva: { backgroundColor: colors.verde, borderColor: colors.verde },
+  opcionTexto: { color: colors.textoSuave, fontSize: 13 },
+  opcionTextoActivo: { color: colors.fondo, fontWeight: '700' },
   pie: { marginTop: 'auto', gap: spacing.m },
   secundario: {
     borderWidth: 2,
