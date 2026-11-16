@@ -55,3 +55,13 @@ export async function verificarPin(pin: string) {
   const guardado = await getSeguro(CLAVE_PIN);
   return guardado !== null && guardado === (await hashPin(pin));
 }
+
+const CLAVE_MODO_PRUEBA = 'modo_prueba';
+
+export async function obtenerModoPrueba(): Promise<boolean> {
+  return (await AsyncStorage.getItem(CLAVE_MODO_PRUEBA)) === 'true';
+}
+
+export async function guardarModoPrueba(valor: boolean) {
+  await AsyncStorage.setItem(CLAVE_MODO_PRUEBA, String(valor));
+}

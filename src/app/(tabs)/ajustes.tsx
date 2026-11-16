@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing, radius } from '@/constants/caminaTheme';
 import { guardarPin, hayPin, verificarPin } from '@/utils/storage';
@@ -11,7 +11,7 @@ type ErroresContacto = { nombre?: string; telefono?: string };
 type ErroresPin = { actual?: string; nuevo?: string; confirmar?: string };
 
 export default function Ajustes() {
-  const { contactos, agregarContacto, eliminarContacto } = useDatos();
+  const { contactos, agregarContacto, eliminarContacto, modoPrueba, setModoPrueba } = useDatos();
 
   // Formulario de contactos
   const [nombre, setNombre] = useState('');
@@ -186,6 +186,22 @@ export default function Ajustes() {
           </Pressable>
         </View>
 
+        <View style={styles.tarjeta}>
+          <View style={styles.filaSwitch}>
+            <View style={{ flex: 1, gap: 4 }}>
+              <Text style={styles.seccion}>Modo de prueba</Text>
+              <Text style={styles.suave}>
+                Muestra "Simular caída" en el trayecto y una salida rápida en la alarma. Útil para demostraciones.
+              </Text>
+            </View>
+            <Switch
+              value={modoPrueba}
+              onValueChange={setModoPrueba}
+              trackColor={{ true: colors.verde, false: colors.textoSuave }}
+            />
+          </View>
+        </View>
+
         {mensaje !== '' && <Text style={styles.mensaje}>{mensaje}</Text>}
       </ScrollView>
     </SafeAreaView>
@@ -202,4 +218,5 @@ const styles = StyleSheet.create({
   boton: { backgroundColor: colors.verde, borderRadius: spacing.s + 4, padding: spacing.m, alignItems: 'center' },
   botonTexto: { color: colors.fondo, fontSize: 16, fontWeight: '700' },
   mensaje: { color: colors.verde, textAlign: 'center', fontSize: 15 },
+  filaSwitch: { flexDirection: 'row', alignItems: 'center', gap: spacing.m },
 });

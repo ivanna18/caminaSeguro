@@ -5,6 +5,8 @@ import {
   guardarContactos,
   obtenerHistorial,
   guardarHistorial,
+  obtenerModoPrueba,
+  guardarModoPrueba,
 } from '@/utils/storage';
 
 export const MAX_CONTACTOS = 3;
@@ -12,12 +14,14 @@ export const MAX_CONTACTOS = 3;
 type DatosContextType = {
   contactos: Contacto[];
   historial: Trayecto[];
+  modoPrueba: boolean;
   cargando: boolean;
   agregarContacto: (nombre: string, telefono: string) => void;
   eliminarContacto: (id: string) => void;
   agregarTrayecto: (trayecto: Omit<Trayecto, 'id'>) => void;
   eliminarTrayecto: (id: string) => void;
   limpiarHistorial: () => void;
+  setModoPrueba: (valor: boolean) => void;
 };
 
 const DatosContext = createContext<DatosContextType | null>(null);
@@ -25,19 +29,21 @@ const DatosContext = createContext<DatosContextType | null>(null);
 export function DatosProvider({ children }: { children: ReactNode }) {
   const [contactos, setContactos] = useState<Contacto[]>([]);
   const [historial, setHistorial] = useState<Trayecto[]>([]);
+  const [modoPrueba, setModoPrueba] = useState(false);
   const [cargando, setCargando] = useState(true);
 
-  // Al abrir la app: lee lo guardado
+  // Al abrir la app: leer lo guardado
   useEffect(() => {
-    Promise.all([obtenerContactos(), obtenerHistorial()])
-      .then(([c, h]) => {
+    Promise.all([obtenerContactos(), obtenerHistorial(), obtenerModoPrueba()])
+      .then(([c, h, m]) => {
         setContactos(c);
         setHistorial(h);
+        setModoPrueba(m);
       })
       .finally(() => setCargando(false));
   }, []);
 
-  // Cada vez que cambian los datos, guardarlos
+  // Cada vez que cambian los datos, guardarlos (solo después de la carga inicial)
   useEffect(() => {
     if (!cargando) guardarContactos(contactos);
   }, [contactos, cargando]);
@@ -45,6 +51,10 @@ export function DatosProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!cargando) guardarHistorial(historial);
   }, [historial, cargando]);
+
+  useEffect(() => {
+    if (!cargando) guardarModoPrueba(modoPrueba);
+  }, [modoPrueba, cargando]);
 
   const agregarContacto = (nombre: string, telefono: string) => {
     const nuevo: Contacto = { id: Date.now().toString(), nombre, telefono };
@@ -71,12 +81,14 @@ export function DatosProvider({ children }: { children: ReactNode }) {
       value={{
         contactos,
         historial,
+        modoPrueba,
         cargando,
         agregarContacto,
         eliminarContacto,
         agregarTrayecto,
         eliminarTrayecto,
         limpiarHistorial,
+        setModoPrueba,
       }}
     >
       {children}

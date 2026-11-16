@@ -1,19 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
 import * as Location from 'expo-location';
 import { colors, spacing, radius } from '@/constants/caminaTheme';
 import { useDeteccionCaidas } from '@/hooks/useDeteccionCaidas';
-import { useCheckin } from '@/hooks/useCheckin';                   
-import CheckinPrompt from '@/components/CheckinPrompt';           
+import { useCheckin } from '@/hooks/useCheckin';
+import CheckinPrompt from '@/components/CheckinPrompt';
+import BotonSOS from '@/components/BotonSOS';
 import { useDatos } from '@/context/DatosContext';
 import { ResultadoTrayecto } from '@/types';
 import { formatoTiempo } from '@/utils/formato';
-import BotonSOS from '@/components/BotonSOS';
 
-// opciones del check-in y tiempo para responder
+// Opciones del check-in y tiempo para responder
 const OPCIONES_CHECKIN = [
   { etiqueta: '30 s (prueba)', seg: 30 },
   { etiqueta: '5 min', seg: 300 },
@@ -38,7 +38,7 @@ export default function Trayecto() {
   useKeepAwake(); // la pantalla no se bloquea mientras dure el trayecto
 
   const router = useRouter();
-  const { agregarTrayecto } = useDatos();
+  const { agregarTrayecto, modoPrueba } = useDatos();
 
   const [activo, setActivo] = useState(true);
   const [g, setG] = useState(1);
@@ -54,7 +54,7 @@ export default function Trayecto() {
   const [segundos, setSegundos] = useState(0);
   const anterior = useRef<{ lat: number; lng: number } | null>(null);
 
-  const [intervalo, setIntervalo] = useState(600); // NUEVO: check-in cada 10 min por defecto
+  const [intervalo, setIntervalo] = useState(600); // check-in cada 10 min por defecto
 
   // Guarda el trayecto en el historial (una sola vez)
   const guardarTrayecto = (resultado: ResultadoTrayecto) => {
@@ -68,8 +68,7 @@ export default function Trayecto() {
     });
   };
 
-  // CAMBIO: ahora recibe el motivo ('caida' o 'checkin')
-  const dispararAlarma = (motivo: 'caida' | 'checkin' | 'panico') => {    
+  const dispararAlarma = (motivo: 'caida' | 'checkin' | 'panico') => {
     guardarTrayecto(motivo);
     setActivo(false);
     router.replace({ pathname: '/alarma', params: { motivo } });
@@ -83,7 +82,7 @@ export default function Trayecto() {
   useDeteccionCaidas({
     activo,
     sensibilidad: 'media',
-    onCaida: () => dispararAlarma('caida'), // CAMBIO
+    onCaida: () => dispararAlarma('caida'),
     onLectura: (a) => {
       const ahora = Date.now();
       if (ahora - ultimaActualizacion.current > 200) {
@@ -93,7 +92,7 @@ export default function Trayecto() {
     },
   });
 
-  // NUEVO: check-in con temporizador
+  // Check-in con temporizador
   const checkin = useCheckin({
     activo,
     intervaloSeg: intervalo,
@@ -168,65 +167,68 @@ export default function Trayecto() {
 
   return (
     <SafeAreaView style={styles.pantalla}>
-      <View style={styles.encabezado}>
-        <Text style={styles.titulo}>Trayecto activo</Text>
-        <Text style={styles.tiempo}>{formatoTiempo(segundos)}</Text>
-      </View>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.contenido}>
+        <View style={styles.encabezado}>
+          <Text style={styles.titulo}>Trayecto activo</Text>
+          <Text style={styles.tiempo}>{formatoTiempo(segundos)}</Text>
+        </View>
 
-      <View style={styles.tarjetas}>
-        <View style={styles.tarjeta}>
-          <Text style={styles.etiqueta}>Velocidad</Text>
-          <Text style={styles.valor}>{velocidad.toFixed(1)}</Text>
-          <Text style={styles.unidad}>km/h</Text>
+        <View style={styles.tarjetas}>
+          <View style={styles.tarjeta}>
+            <Text style={styles.etiqueta}>Velocidad</Text>
+            <Text style={styles.valor}>{velocidad.toFixed(1)}</Text>
+            <Text style={styles.unidad}>km/h</Text>
+          </View>
+          <View style={styles.tarjeta}>
+            <Text style={styles.etiqueta}>Distancia</Text>
+            <Text style={styles.valor}>
+              {distancia >= 1000 ? (distancia / 1000).toFixed(2) : Math.round(distancia)}
+            </Text>
+            <Text style={styles.unidad}>{distancia >= 1000 ? 'km' : 'm'}</Text>
+          </View>
+          <View style={styles.tarjeta}>
+            <Text style={styles.etiqueta}>Fuerza</Text>
+            <Text style={styles.valor}>{g.toFixed(2)}</Text>
+            <Text style={styles.unidad}>g</Text>
+          </View>
         </View>
-        <View style={styles.tarjeta}>
-          <Text style={styles.etiqueta}>Distancia</Text>
-          <Text style={styles.valor}>
-            {distancia >= 1000 ? (distancia / 1000).toFixed(2) : Math.round(distancia)}
-          </Text>
-          <Text style={styles.unidad}>{distancia >= 1000 ? 'km' : 'm'}</Text>
-        </View>
-        <View style={styles.tarjeta}>
-          <Text style={styles.etiqueta}>Fuerza</Text>
-          <Text style={styles.valor}>{g.toFixed(2)}</Text>
-          <Text style={styles.unidad}>g</Text>
-        </View>
-      </View>
 
-      <View style={styles.gps}>
-        <Text style={styles.etiqueta}>Ubicación · precisión GPS: {calidadGps}</Text>
-        <Text style={styles.coordenadas}>{textoGps}</Text>
-      </View>
-
-      {/* NUEVO: tarjeta del check-in */}
-      <View style={styles.checkin}>
-        <Text style={styles.etiqueta}>Próximo check-in en {formatoTiempo(checkin.restante)}</Text>
-        <View style={styles.opciones}>
-          {OPCIONES_CHECKIN.map((o) => (
-            <Pressable
-              key={o.seg}
-              onPress={() => setIntervalo(o.seg)}
-              style={[styles.opcion, intervalo === o.seg && styles.opcionActiva]}
-            >
-              <Text style={[styles.opcionTexto, intervalo === o.seg && styles.opcionTextoActivo]}>
-                {o.etiqueta}
-              </Text>
-            </Pressable>
-          ))}
+        <View style={styles.gps}>
+          <Text style={styles.etiqueta}>Ubicación · precisión GPS: {calidadGps}</Text>
+          <Text style={styles.coordenadas}>{textoGps}</Text>
         </View>
-      </View>
+
+        <View style={styles.checkin}>
+          <Text style={styles.etiqueta}>Próximo check-in en {formatoTiempo(checkin.restante)}</Text>
+          <View style={styles.opciones}>
+            {OPCIONES_CHECKIN.map((o) => (
+              <Pressable
+                key={o.seg}
+                onPress={() => setIntervalo(o.seg)}
+                style={[styles.opcion, intervalo === o.seg && styles.opcionActiva]}
+              >
+                <Text style={[styles.opcionTexto, intervalo === o.seg && styles.opcionTextoActivo]}>
+                  {o.etiqueta}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      </ScrollView>
 
       <View style={styles.pie}>
         <BotonSOS onActivar={() => dispararAlarma('panico')} />
-        <Pressable style={styles.secundario} onPress={() => dispararAlarma('caida')}>
-          <Text style={styles.secundarioTexto}>Simular caída (prueba)</Text>
-        </Pressable>
+        {modoPrueba && (
+          <Pressable style={styles.secundario} onPress={() => dispararAlarma('caida')}>
+            <Text style={styles.secundarioTexto}>Simular caída (prueba)</Text>
+          </Pressable>
+        )}
         <Pressable style={styles.principal} onPress={llegueASalvo}>
           <Text style={styles.principalTexto}>Llegué a salvo</Text>
         </Pressable>
       </View>
 
-      {/* NUEVO: pregunta "¿Estás bien?" encima de todo */}
+      {/* Pregunta "¿Estás bien?" encima de todo */}
       {checkin.preguntando && (
         <CheckinPrompt ventana={checkin.ventana} onCorrecto={checkin.confirmar} />
       )}
@@ -236,6 +238,8 @@ export default function Trayecto() {
 
 const styles = StyleSheet.create({
   pantalla: { flex: 1, backgroundColor: colors.fondo, padding: spacing.l, gap: spacing.m },
+  scroll: { flex: 1 },
+  contenido: { gap: spacing.m },
   encabezado: { alignItems: 'center', gap: spacing.s },
   titulo: { color: colors.textoSuave, fontSize: 16 },
   tiempo: { color: colors.verde, fontSize: 56, fontWeight: '800' },
@@ -264,7 +268,7 @@ const styles = StyleSheet.create({
   opcionActiva: { backgroundColor: colors.verde, borderColor: colors.verde },
   opcionTexto: { color: colors.textoSuave, fontSize: 13 },
   opcionTextoActivo: { color: colors.fondo, fontWeight: '700' },
-  pie: { marginTop: 'auto', gap: spacing.m },
+  pie: { gap: spacing.s },
   secundario: {
     borderWidth: 2,
     borderColor: colors.textoSuave,
