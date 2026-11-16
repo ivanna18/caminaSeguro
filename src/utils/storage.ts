@@ -2,10 +2,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import * as Crypto from 'expo-crypto';
 import { Platform } from 'react-native';
-
-export type Contacto = { id: string; nombre: string; telefono: string };
+import { Contacto, Trayecto } from '@/types';
 
 const CLAVE_CONTACTOS = 'contactos';
+const CLAVE_HISTORIAL = 'historial';
 const CLAVE_PIN = 'pin_hash';
 
 export async function obtenerContactos(): Promise<Contacto[]> {
@@ -15,6 +15,15 @@ export async function obtenerContactos(): Promise<Contacto[]> {
 
 export async function guardarContactos(lista: Contacto[]) {
   await AsyncStorage.setItem(CLAVE_CONTACTOS, JSON.stringify(lista));
+}
+
+export async function obtenerHistorial(): Promise<Trayecto[]> {
+  const raw = await AsyncStorage.getItem(CLAVE_HISTORIAL);
+  return raw ? JSON.parse(raw) : [];
+}
+
+export async function guardarHistorial(lista: Trayecto[]) {
+  await AsyncStorage.setItem(CLAVE_HISTORIAL, JSON.stringify(lista));
 }
 
 async function setSeguro(clave: string, valor: string) {

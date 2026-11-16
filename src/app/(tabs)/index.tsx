@@ -3,71 +3,60 @@ import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-nativ
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import * as Battery from 'expo-battery';
-import { colors, spacing, radius } from '@/constants/caminaTheme';
-import { obtenerContactos } from '@/utils/storage';
 import * as Location from 'expo-location';
-
-function Chip({ texto }: { texto: string }) {
-  return (
-    <View style={styles.chip}>
-      <Text style={styles.chipTexto}>{texto}</Text>
-    </View>
-  );
-}
+import { colors, spacing, radius } from '@/constants/caminaTheme';
+import { useDatos, MAX_CONTACTOS } from '@/context/DatosContext';
+import Chip from '@/components/Chip';
 
 export default function Inicio() {
   const router = useRouter();
   const pulso = useRef(new Animated.Value(0)).current;
   const sos = useRef(new Animated.Value(0)).current;
-  const [numContactos, setNumContactos] = useState(0);
   const [gps, setGps] = useState('GPS: --');
   const [bateria, setBateria] = useState<number | null>(null);
+  const { contactos } = useDatos();
 
+  // Precisión del GPS cada vez que la pantalla recupera el foco
   useFocusEffect(
     useCallback(() => {
-      obtenerContactos().then((contactos) => setNumContactos(contactos.length));
+      let cancelado = false;
+
+      (async () => {
+        try {
+          const { status } = await Location.requestForegroundPermissionsAsync();
+          if (status !== 'granted') {
+            if (!cancelado) setGps('GPS: sin permiso');
+            return;
+          }
+          if (!cancelado) setGps('GPS: buscando...');
+
+          const limite = new Promise<null>((res) => setTimeout(() => res(null), 8000));
+          const pos = await Promise.race([
+            Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+            limite,
+          ]);
+          if (cancelado) return;
+
+          if (!pos) {
+            setGps('GPS: sin señal');
+            return;
+          }
+          const p = pos.coords.accuracy;
+          setGps(
+            p == null ? 'GPS: activo' : p <= 15 ? 'GPS: buena' : p <= 40 ? 'GPS: media' : 'GPS: baja'
+          );
+        } catch {
+          if (!cancelado) setGps('GPS: no disponible');
+        }
+      })();
+
+      return () => {
+        cancelado = true;
+      };
     }, [])
   );
 
-  useFocusEffect(
-  useCallback(() => {
-    let cancelado = false;
-
-    (async () => {
-      try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          if (!cancelado) setGps('GPS: sin permiso');
-          return;
-        }
-        if (!cancelado) setGps('GPS: buscando...');
-
-        const limite = new Promise<null>((res) => setTimeout(() => res(null), 8000));
-        const pos = await Promise.race([
-          Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
-          limite,
-        ]);
-        if (cancelado) return;
-
-        if (!pos) {
-          setGps('GPS: sin señal');
-          return;
-        }
-        const p = pos.coords.accuracy;
-        setGps(
-          p == null ? 'GPS: activo' : p <= 15 ? 'GPS: buena' : p <= 40 ? 'GPS: media' : 'GPS: baja'
-        );
-      } catch {
-        if (!cancelado) setGps('GPS: no disponible');
-      }
-    })();
-
-    return () => {
-      cancelado = true;
-    };
-  }, [])
-);
-
+  // Animación del anillo y nivel de batería
   useEffect(() => {
     Animated.loop(
       Animated.timing(pulso, {
@@ -88,7 +77,7 @@ export default function Inicio() {
       ({ finished }) => {
         if (finished) {
           sos.setValue(0);
-          router.push({ pathname: '/alarma', params: { motivo: 'panico' } });  
+          router.push({ pathname: '/alarma', params: { motivo: 'panico' } });
         }
       }
     );
@@ -111,7 +100,7 @@ export default function Inicio() {
         <View style={styles.chips}>
           <Chip texto={bateria !== null ? `Batería ${bateria}%` : 'Batería --'} />
           <Chip texto={gps} />
-          <Chip texto={`Contactos ${numContactos}/3`} />
+          <Chip texto={`Contactos ${contactos.length}/${MAX_CONTACTOS}`} />
         </View>
       </View>
 
@@ -129,7 +118,6 @@ export default function Inicio() {
           <Animated.View style={[styles.sosRelleno, { width: anchoSOS }]} />
           <Text style={styles.sosTexto}>SOS · mantén 3 s</Text>
         </Pressable>
-        
       </View>
     </SafeAreaView>
   );
@@ -141,13 +129,6 @@ const styles = StyleSheet.create({
   titulo: { color: colors.texto, fontSize: 35, fontWeight: '600' },
   subtitulo: { color: colors.textoSuave, fontSize: 16, fontWeight: '200' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.s, marginTop: spacing.m },
-  chip: {
-    backgroundColor: colors.tarjeta,
-    paddingVertical: 6,
-    paddingHorizontal: spacing.m,
-    borderRadius: radius.l,
-  },
-  chipTexto: { color: colors.textoSuave, fontSize: 13 },
   centro: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   anillo: {
     position: 'absolute',
@@ -179,5 +160,4 @@ const styles = StyleSheet.create({
   },
   sosRelleno: { position: 'absolute', left: 0, top: 0, bottom: 0, backgroundColor: colors.rojo },
   sosTexto: { color: colors.texto, fontSize: 18, fontWeight: '700' },
-  enlace: { color: colors.textoSuave, fontSize: 15 },
 });
