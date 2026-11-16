@@ -66,7 +66,7 @@ export default function Ajustes() {
   };
 
   return (
-    <SafeAreaView style={styles.pantalla}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={styles.pantalla}>
       <ScrollView contentContainerStyle={styles.contenido} keyboardShouldPersistTaps="handled">
         <Pressable onPress={volver}>
           <Text style={styles.volver}>← Volver</Text>

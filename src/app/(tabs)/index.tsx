@@ -104,7 +104,7 @@ export default function Inicio() {
   const opacidadAnillo = pulso.interpolate({ inputRange: [0, 1], outputRange: [0.5, 0] });
 
   return (
-    <SafeAreaView style={styles.pantalla}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={styles.pantalla}>
       <View style={styles.encabezado}>
         <Text style={styles.titulo}>CaminaSeguro</Text>
         <Text style={styles.subtitulo}>Tu trayecto, acompañado.</Text>
@@ -129,9 +129,7 @@ export default function Inicio() {
           <Animated.View style={[styles.sosRelleno, { width: anchoSOS }]} />
           <Text style={styles.sosTexto}>SOS · mantén 3 s</Text>
         </Pressable>
-        <Pressable onPress={() => router.push('/ajustes')}>
-          <Text style={styles.enlace}>Ajustes y contactos</Text>
-        </Pressable>
+        
       </View>
     </SafeAreaView>
   );
