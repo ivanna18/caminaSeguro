@@ -11,6 +11,7 @@ import CheckinPrompt from '@/components/CheckinPrompt';
 import { useDatos } from '@/context/DatosContext';
 import { ResultadoTrayecto } from '@/types';
 import { formatoTiempo } from '@/utils/formato';
+import BotonSOS from '@/components/BotonSOS';
 
 // opciones del check-in y tiempo para responder
 const OPCIONES_CHECKIN = [
@@ -68,7 +69,7 @@ export default function Trayecto() {
   };
 
   // CAMBIO: ahora recibe el motivo ('caida' o 'checkin')
-  const dispararAlarma = (motivo: 'caida' | 'checkin') => {
+  const dispararAlarma = (motivo: 'caida' | 'checkin' | 'panico') => {    
     guardarTrayecto(motivo);
     setActivo(false);
     router.replace({ pathname: '/alarma', params: { motivo } });
@@ -216,6 +217,7 @@ export default function Trayecto() {
       </View>
 
       <View style={styles.pie}>
+        <BotonSOS onActivar={() => dispararAlarma('panico')} />
         <Pressable style={styles.secundario} onPress={() => dispararAlarma('caida')}>
           <Text style={styles.secundarioTexto}>Simular caída (prueba)</Text>
         </Pressable>

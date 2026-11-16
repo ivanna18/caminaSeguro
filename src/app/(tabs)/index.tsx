@@ -7,11 +7,11 @@ import * as Location from 'expo-location';
 import { colors, spacing, radius } from '@/constants/caminaTheme';
 import { useDatos, MAX_CONTACTOS } from '@/context/DatosContext';
 import Chip from '@/components/Chip';
+import BotonSOS from '@/components/BotonSOS';
 
 export default function Inicio() {
   const router = useRouter();
   const pulso = useRef(new Animated.Value(0)).current;
-  const sos = useRef(new Animated.Value(0)).current;
   const [gps, setGps] = useState('GPS: --');
   const [bateria, setBateria] = useState<number | null>(null);
   const { contactos, agregarTrayecto } = useDatos();
@@ -72,29 +72,18 @@ export default function Inicio() {
       .catch(() => {});
   }, [pulso]);
 
-  const iniciarSOS = () => {
-    Animated.timing(sos, { toValue: 1, duration: 3000, useNativeDriver: false }).start(
-      ({ finished }) => {
-        if (finished) {
-          sos.setValue(0);
-          agregarTrayecto({
-            inicio: new Date().toISOString(),
-            duracionSeg: 0,
-            distanciaM: 0,
-            resultado: 'panico',
-          });
-          router.push({ pathname: '/alarma', params: { motivo: 'panico' } });
-        }
-      }
-    );
-  };
+  
+const alActivarSOS = () => {
+  agregarTrayecto({
+    inicio: new Date().toISOString(),
+    duracionSeg: 0,
+    distanciaM: 0,
+    resultado: 'panico',
+  });
+  router.push({ pathname: '/alarma', params: { motivo: 'panico' } });
+};
+  
 
-  const soltarSOS = () => {
-    sos.stopAnimation();
-    sos.setValue(0);
-  };
-
-  const anchoSOS = sos.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
   const escalaAnillo = pulso.interpolate({ inputRange: [0, 1], outputRange: [1, 1.4] });
   const opacidadAnillo = pulso.interpolate({ inputRange: [0, 1], outputRange: [0.5, 0] });
 
@@ -120,10 +109,7 @@ export default function Inicio() {
       </View>
 
       <View style={styles.pie}>
-        <Pressable onPressIn={iniciarSOS} onPressOut={soltarSOS} style={styles.sos}>
-          <Animated.View style={[styles.sosRelleno, { width: anchoSOS }]} />
-          <Text style={styles.sosTexto}>SOS · mantén 3 s</Text>
-        </Pressable>
+        <BotonSOS onActivar={alActivarSOS} />
       </View>
     </SafeAreaView>
   );
