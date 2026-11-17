@@ -84,12 +84,6 @@ assets/sounds/         alarma.wav
 - La app reproduce la sirena al máximo del reproductor, pero no puede subir el volumen del teléfono.
 - Los umbrales de caída se calibraron probando; pueden dar falsas alarmas en ciertos movimientos.
 
-## Mejoras futuras
-
-- Notificaciones locales (`expo-notifications`) para que el check-in funcione con la pantalla bloqueada.
-- Modo correr, con umbrales distintos y la velocidad del GPS como segunda señal.
-- Ajuste de sensibilidad del acelerómetro (baja, media, alta) desde Ajustes.
-- GPS en segundo plano.
 
 ## Evidencia
 
