@@ -15,10 +15,10 @@ import { formatoTiempo } from '@/utils/formato';
 
 // Opciones del check-in y tiempo para responder
 const OPCIONES_CHECKIN = [
-  { etiqueta: '30 s (prueba)', seg: 30 },
-  { etiqueta: '5 min', seg: 300 },
-  { etiqueta: '10 min', seg: 600 },
-  { etiqueta: '15 min', seg: 900 },
+  { etiqueta: '30 s (prueba)', seg: 30, soloPrueba: true },
+  { etiqueta: '5 min', seg: 300, soloPrueba: false },
+  { etiqueta: '10 min', seg: 600, soloPrueba: false },
+  { etiqueta: '15 min', seg: 900, soloPrueba: false },
 ];
 const VENTANA_CHECKIN_SEG = 30;
 
@@ -55,6 +55,7 @@ export default function Trayecto() {
   const anterior = useRef<{ lat: number; lng: number } | null>(null);
 
   const [intervalo, setIntervalo] = useState(600); // check-in cada 10 min por defecto
+  const opcionesCheckin = OPCIONES_CHECKIN.filter((o) => modoPrueba || !o.soloPrueba);
 
   // Guarda el trayecto en el historial (una sola vez)
   const guardarTrayecto = (resultado: ResultadoTrayecto) => {
@@ -201,7 +202,7 @@ export default function Trayecto() {
         <View style={styles.checkin}>
           <Text style={styles.etiqueta}>Próximo check-in en {formatoTiempo(checkin.restante)}</Text>
           <View style={styles.opciones}>
-            {OPCIONES_CHECKIN.map((o) => (
+            {opcionesCheckin.map((o) => (
               <Pressable
                 key={o.seg}
                 onPress={() => setIntervalo(o.seg)}
