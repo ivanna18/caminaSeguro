@@ -93,15 +93,15 @@ assets/sounds/         alarma.wav
 
 ## Evidencia
 
-- Repositorio: [COMPLETAR link de GitHub]
-- APK: [COMPLETAR link del build en expo.dev]
-- Wireframe: [COMPLETAR ruta de la imagen, por ejemplo `docs/wireframe.png`]
+- Repositorio: [(https://github.com/ivanna18/caminaSeguro/tree/main)]
+- APK: [https://expo.dev/accounts/ivanna-18/projects/caminaSeguro/builds/46e0349c-8eba-4da2-a2ca-47140ca65601]
+
 
 ## Equipo
 
 | Integrante | 
 |---|
-| [Ivanna Rodriguez ] | 
-| [Victor Manuel Colin ] 
+| Ivanna Rodriguez  | 
+| Victor Manuel Colin  
 
 
