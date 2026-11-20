@@ -77,18 +77,11 @@ src/
 assets/sounds/         alarma.wav
 ```
 
-## Limitaciones conocidas
-
-- El SMS no se envía solo: el sistema abre la app de mensajes y el usuario toca enviar.
-- El acelerómetro, el check-in y el GPS funcionan con la app abierta y la pantalla encendida.
-- La app reproduce la sirena al máximo del reproductor, pero no puede subir el volumen del teléfono.
-- Los umbrales de caída se calibraron probando; pueden dar falsas alarmas en ciertos movimientos.
-
 
 ## Evidencia
 
 - Repositorio: [(https://github.com/ivanna18/caminaSeguro/tree/main)]
-- APK: [https://expo.dev/accounts/ivanna-18/projects/caminaSeguro/builds/46e0349c-8eba-4da2-a2ca-47140ca65601]
+- APK: [https://expo.dev/accounts/ivanna-18/projects/caminaSeguro/builds/c15b13c5-3eec-48ab-86b0-4804370f4e83]
 
 
 ## Equipo
