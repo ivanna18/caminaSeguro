@@ -3,13 +3,14 @@ import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { useAudioPlayer, setAudioModeAsync } from 'expo-audio';   // NUEVO
-import * as Location from 'expo-location';                         // NUEVO
-import * as SMS from 'expo-sms';                                   // NUEVO
+import { useAudioPlayer, setAudioModeAsync } from 'expo-audio';   
+import * as Location from 'expo-location';                         
+import * as SMS from 'expo-sms';                                   
 import { colors, spacing, radius } from '@/constants/caminaTheme';
-import { verificarPin, obtenerContactos } from '@/utils/storage';  // NUEVO: obtenerContactos
+import { verificarPin, obtenerContactos } from '@/utils/storage';  
+import { useDatos } from '@/context/DatosContext';
 
-const SEGUNDOS = 15; // para probar rápido puedes bajarlo a 5
+const SEGUNDOS = 15; 
 const TECLAS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫'];
 
 const MOTIVOS: Record<string, string> = {
@@ -18,7 +19,7 @@ const MOTIVOS: Record<string, string> = {
   checkin: 'No respondiste el check-in',
 };
 
-// NUEVO: espera la ubicación, pero no más de 6 segundos
+// espera la ubicación, pero no más de 6 segundos
 async function obtenerUbicacion() {
   try {
     const permiso = await Location.requestForegroundPermissionsAsync();
@@ -41,7 +42,8 @@ export default function Alarma() {
   const [error, setError] = useState('');
   const [aviso, setAviso] = useState('');                           
   const parpadeo = useRef(new Animated.Value(0)).current;
-  const emergenciaLanzada = useRef(false);                          
+  const emergenciaLanzada = useRef(false);    
+  const { modoPrueba } = useDatos();                      
 
   const player = useAudioPlayer(require('../../assets/sounds/alarma.wav')); 
 
@@ -182,15 +184,16 @@ export default function Alarma() {
           ))}
         </View>
 
-        {/* Temporal: quitar cuando todo esté probado */}
-        <Pressable
-          onPress={() => {
-            try { player.pause(); } catch {}
-            router.replace('/');
-          }}
-        >
-          <Text style={styles.salida}>Salir (solo pruebas)</Text>
-        </Pressable>
+        {modoPrueba && (
+            <Pressable
+              onPress={() => {
+              try { player.pause(); } catch {}
+              router.replace('/');
+              }}
+            >
+              <Text style={styles.salida}>Salir (modo de prueba)</Text>
+            </Pressable>
+          )}
       </SafeAreaView>
     </Animated.View>
   );
